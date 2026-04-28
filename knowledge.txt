@@ -1,0 +1,4 @@
+We offer Python, Java, and Data Science courses.
+The fee for each course is ₹10,000.
+Classes run from 9 AM to 6 PM.
+Demo classes are available on weekends.

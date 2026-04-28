@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Chatbot</title>
+    <meta charset="UTF-8">
+
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #eef2f7;
+        }
+
+        .chat-container {
+            width: 350px;
+            height: 520px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #4CAF50, #2e7d32);
+            color: white;
+            padding: 15px;
+            border-radius: 15px 15px 0 0;
+            font-weight: bold;
+        }
+
+        .chatbox {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            margin: 8px 0;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 75%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .user {
+            background: #DCF8C6;
+            align-self: flex-end;
+        }
+
+        .bot {
+            background: #f1f1f1;
+            align-self: flex-start;
+        }
+
+        .input-area {
+            display: flex;
+            border-top: 1px solid #ccc;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            outline: none;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #388e3c;
+        }
+
+        @keyframes fadeIn {
+            from {opacity: 0;}
+            to {opacity: 1;}
+        }
+        .quick-replies {
+    display: flex;
+    gap: 5px;
+    padding: 10px;
+    flex-wrap: wrap;
+}
+
+    .quick-replies button {
+        background: #e0e0e0;
+        border: none;
+        padding: 6px 10px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 12px;
+    }
+
+    .quick-replies button:hover {
+        background: #d5d5d5;
+    }
+
+    #chatToggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #4CAF50;
+    color: white;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    font-size: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+}
+
+#chatToggle:hover {
+    background: #388e3c;
+}
+
+.chat-container {
+    width: 350px;
+    height: 500px;
+    position: fixed;
+    bottom: 90px;
+    right: 20px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 1000;
+}
+
+.chatbox {
+    max-width: 100%;
+    padding: 10px;
+}
+
+.input-area {
+    display: flex;
+    border-top: 1px solid #ddd;
+    padding: 5px;
+    background: #fafafa;
+}
+
+input {
+    border-radius: 20px;
+    padding: 10px;
+    background: #fff;
+}
+
+button {
+    border-radius: 50%;
+}
+
+.quick-replies button {
+    background: #e8f5e9;
+    border: 1px solid #4CAF50;
+    color: #2e7d32;
+    font-weight: 500;
+}
+
+.bot {
+    background: #f1f1f1;
+    border-radius: 10px 10px 10px 0;
+}
+
+.user {
+    background: #dcf8c6;
+    border-radius: 10px 10px 0 10px;
+}
+
+    </style>
+</head>
+
+<body>
+
+<div id="chatWidget" class="chat-container" style="display:none;">
+
+    <div class="chat-header">
+        🤖 AI Support Assistant
+    </div>
+
+    <div id="chatbox" class="chatbox"></div>
+
+    <div class="quick-replies">
+        <button onclick="quickSend('What courses do you offer?')">📘 Courses</button>
+        <button onclick="quickSend('What are the fees?')">💰 Fees</button>
+        <button onclick="quickSend('I want to book a demo class')">🎯 Demo</button>
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="userInput" placeholder="Ask something...">
+        <button onclick="sendMessage()">➤</button>
+    </div>
+
+</div>
+
+<div id="chatToggle" onclick="toggleChat()">
+    💬
+</div>
+
+<script>
+
+function scrollToBottom() {
+    const chatbox = document.getElementById("chatbox");
+    chatbox.scrollTo({
+        top: chatbox.scrollHeight,
+        behavior: "smooth"
+    });
+}
+
+function quickSend(text) {
+    document.getElementById("userInput").value = text;
+    sendMessage();
+}
+
+window.onload = () => {
+    document.getElementById("chatbox").innerHTML += 
+        `<div class="message bot">Hi 👋 How can I help you today?</div>`;
+};
+
+async function sendMessage() {
+    const inputBox = document.getElementById("userInput");
+    const message = inputBox.value.trim();
+
+    if (!message) return;
+
+    const chatbox = document.getElementById("chatbox");
+
+    // USER MESSAGE
+    chatbox.innerHTML += `<div class="message user">${message}</div>`;
+    inputBox.value = "";
+    scrollToBottom();
+
+    // TYPING
+    chatbox.innerHTML += `<div id="loading" class="message bot">Typing...</div>`;
+    scrollToBottom();
+
+    try {
+        const response = await fetch("/chat", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({message: message})
+        });
+
+        const data = await response.json();
+
+        document.getElementById("loading").remove();
+
+        chatbox.innerHTML += `<div class="message bot">${data.reply}</div>`;
+        scrollToBottom();
+
+    } catch (error) {
+        document.getElementById("loading").remove();
+        chatbox.innerHTML += `<div class="message bot">Error. Try again.</div>`;
+        scrollToBottom();
+    }
+}
+
+// ENTER KEY
+document.getElementById("userInput").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") sendMessage();
+});
+
+// TOGGLE CHAT
+function toggleChat() {
+    let chat = document.getElementById("chatWidget");
+
+    if (chat.style.display === "none") {
+        chat.style.display = "flex";
+    } else {
+        chat.style.display = "none";
+    }
+}
+
+</script>
+
+</body>
+</html>
