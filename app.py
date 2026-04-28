@@ -131,6 +131,9 @@ def chat():
     user_msg = request.json["message"]
     user_id = "default"
 
+    # =========================
+    # USER STATE INIT
+    # =========================
     if user_id not in user_state:
         user_state[user_id] = {
             "name": None,
@@ -141,20 +144,29 @@ def chat():
 
     state = user_state[user_id]
 
+    q = user_msg.lower()
+
+    # =========================
+    # BASIC HUMAN RESPONSES
+    # =========================
+    if q in ["hi", "hello", "hey"]:
+        return jsonify({"reply": "Hi 👋 How can I help you today?"})
+
+    if "how are you" in q:
+        return jsonify({"reply": "I'm doing great! How can I help you today?"})
+
     # =========================
     # NAME
     # =========================
     if state["awaiting_name"]:
 
-        invalid_names = ["ok", "okay", "hi", "hello", "yes", "no", "hmm", "cool"]
+        invalid_names = ["ok", "okay", "hi", "hello", "yes", "no", "hmm", "cool", "wait", "nice"]
 
         name = user_msg.strip().lower()
 
-        # ❌ reject common chat words
         if name in invalid_names:
             return jsonify({"reply": "Please enter your actual name."})
 
-        # ✅ validate proper name
         if 2 <= len(user_msg) <= 30 and user_msg.replace(" ", "").isalpha():
             formatted_name = user_msg.title()
 
@@ -172,13 +184,11 @@ def chat():
     # =========================
     if state["awaiting_phone"]:
 
-        # safety
         if not state["name"]:
             state["awaiting_phone"] = False
             state["awaiting_name"] = True
             return jsonify({"reply": "Please enter your name first."})
 
-        # normalize phone
         phone = user_msg.replace(" ", "").replace("+91", "")
 
         if re.fullmatch(r"[6-9]\d{9}", phone):
@@ -194,7 +204,6 @@ def chat():
                 "Website Chatbot"
             ])
 
-            # reset
             state["awaiting_phone"] = False
             state["awaiting_name"] = False
             state["name"] = None
@@ -204,12 +213,9 @@ def chat():
 
         return jsonify({"reply": "Enter valid phone number."})
 
-
     # =========================
     # RULE-BASED
     # =========================
-    q = user_msg.lower()
-
     if "course" in q:
         return jsonify({"reply": "We offer Python, Java, and Data Science courses."})
 
@@ -228,7 +234,6 @@ def chat():
             "reply": "We offer demo classes on weekends.\n\nMay I know your name?"
         })
 
-
     # =========================
     # AI (fallback)
     # =========================
@@ -238,15 +243,10 @@ def chat():
     relevant = get_relevant_info(user_msg, knowledge)
 
     if not relevant.strip():
-        return jsonify({"reply": "I'm not sure about that. Please contact support."})
+    return jsonify({
+        "reply": "I can help with courses, fees, timings, and demo classes. What would you like to know?"
+    })
 
-    reply = ask_ai(user_msg, relevant)
+reply = ask_ai(user_msg, relevant)
 
-    return jsonify({"reply": reply})
-
-# =========================
-# RUN
-# =========================
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+return jsonify({"reply": reply})
