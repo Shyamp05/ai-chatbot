@@ -243,10 +243,10 @@ def chat():
     relevant = get_relevant_info(user_msg, knowledge)
 
     if not relevant.strip():
-    return jsonify({
-        "reply": "I can help with courses, fees, timings, and demo classes. What would you like to know?"
-    })
+        return jsonify({
+            "reply": "I can help with courses, fees, timings, and demo classes. What would you like to know?"
+        })
 
-reply = ask_ai(user_msg, relevant)
+    reply = ask_ai(user_msg, relevant)
 
-return jsonify({"reply": reply})
+    return jsonify({"reply": reply})
