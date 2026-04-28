@@ -1,3 +1,4 @@
+
 import requests
 import re
 import os
@@ -30,7 +31,17 @@ scope = [
 
 import os, json
 
-creds_dict = json.loads(os.getenv("GOOGLE_CREDS"))
+creds_json = os.getenv("GOOGLE_CREDS")
+
+if not creds_json:
+    print("❌ GOOGLE_CREDS not found")
+    raise Exception("Missing GOOGLE_CREDS")
+
+try:
+    creds_dict = json.loads(creds_json)
+except Exception as e:
+    print("❌ JSON ERROR:", e)
+    raise Exception("Invalid GOOGLE_CREDS format")
 
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
