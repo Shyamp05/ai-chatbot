@@ -23,60 +23,35 @@ leads = []
 # =========================
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+import os, json
 
 scope = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive"
 ]
 
-import os, json
-
-creds_json = os.getenv("GOOGLE_CREDS")
-
-if not creds_json:
-    print("❌ GOOGLE_CREDS not found")
-    raise Exception("Missing GOOGLE_CREDS")
+sheet = None  # safe default
 
 try:
-    creds_dict = json.loads(creds_json)
+    creds_json = os.getenv("GOOGLE_CREDS")
+
+    # ✅ If env exists (Render)
+    if creds_json:
+        creds_dict = json.loads(creds_json)
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+        print("✅ Using ENV credentials")
+
+    # ✅ Else use local file (VS Code)
+    else:
+        creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+        print("✅ Using local credentials.json")
+
+    client = gspread.authorize(creds)
+    sheet = client.open("Chatbot Leads").sheet1
+    print("✅ Google Sheets connected")
+
 except Exception as e:
-    print("❌ JSON ERROR:", e)
-    raise Exception("Invalid GOOGLE_CREDS format")
-
-creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-client = gspread.authorize(creds)
-sheet = client.open("Chatbot Leads").sheet1
-
-# =========================
-# RETRIEVAL
-# =========================
-def get_relevant_info(question, knowledge):
-    lines = knowledge.split("\n")
-
-    keywords_map = {
-        "course": ["course", "courses"],
-        "fees": ["fee", "fees", "price", "cost"],
-        "demo": ["demo", "trial"],
-        "time": ["time", "timing", "schedule"]
-    }
-
-    q = question.lower()
-    matched_keywords = []
-
-    for key, words in keywords_map.items():
-        for w in words:
-            if w in q:
-                matched_keywords.append(key)
-
-    relevant = []
-
-    for line in lines:
-        for key in matched_keywords:
-            if key in line.lower():
-                relevant.append(line)
-                break
-
-    return "\n".join(relevant)
+    print("❌ Google Sheets ERROR:", e)
 
 # =========================
 # GEMINI AI
@@ -142,9 +117,6 @@ def chat():
     user_msg = request.json["message"]
     user_id = "default"
 
-    # =========================
-    # USER STATE INIT
-    # =========================
     if user_id not in user_state:
         user_state[user_id] = {
             "name": None,
@@ -154,11 +126,10 @@ def chat():
         }
 
     state = user_state[user_id]
-
     q = user_msg.lower()
 
     # =========================
-    # BASIC HUMAN RESPONSES
+    # BASIC RESPONSES
     # =========================
     if q in ["hi", "hello", "hey"]:
         return jsonify({"reply": "Hi 👋 How can I help you today?"})
@@ -170,8 +141,7 @@ def chat():
     # NAME
     # =========================
     if state["awaiting_name"]:
-
-        invalid_names = ["ok", "okay", "hi", "hello", "yes", "no", "hmm", "cool", "wait", "nice"]
+        invalid_names = ["ok", "okay", "hi", "hello", "yes", "no"]
 
         name = user_msg.strip().lower()
 
@@ -188,7 +158,7 @@ def chat():
 
             return jsonify({"reply": f"Nice to meet you, {formatted_name}! Share phone number."})
 
-        return jsonify({"reply": "Please enter a valid name (only letters)."})
+        return jsonify({"reply": "Please enter a valid name."})
 
     # =========================
     # PHONE
@@ -207,18 +177,21 @@ def chat():
             if leads:
                 leads[-1]["phone"] = phone
 
-            sheet.append_row([
-                state["name"],
-                phone,
-                "New Lead",
-                datetime.now().strftime("%Y-%m-%d %H:%M"),
-                "Website Chatbot"
-            ])
+            if sheet:
+                try:
+                    sheet.append_row([
+                        state["name"],
+                        phone,
+                        "New Lead",
+                        datetime.now().strftime("%Y-%m-%d %H:%M"),
+                        "Website Chatbot"
+                    ])
+                except Exception as e:
+                    print("Sheet error:", e)
 
             state["awaiting_phone"] = False
             state["awaiting_name"] = False
             state["name"] = None
-            state["phone"] = None
 
             return jsonify({"reply": "Thanks! We will contact you soon."})
 
@@ -230,23 +203,18 @@ def chat():
     if "course" in q:
         return jsonify({"reply": "We offer Python, Java, and Data Science courses."})
 
-    if "fee" in q or "price" in q or "cost" in q:
-        return jsonify({"reply": "The fee for each course is ₹10,000."})
+    if "fee" in q or "price" in q:
+        return jsonify({"reply": "The fee is ₹10,000."})
 
     if "time" in q:
         return jsonify({"reply": "Classes run from 9 AM to 6 PM."})
 
     if "demo" in q:
         state["awaiting_name"] = True
-        state["awaiting_phone"] = False
-        state["name"] = None
-
-        return jsonify({
-            "reply": "We offer demo classes on weekends.\n\nMay I know your name?"
-        })
+        return jsonify({"reply": "We offer demo classes.\n\nMay I know your name?"})
 
     # =========================
-    # AI (fallback)
+    # AI FALLBACK
     # =========================
     with open("knowledge.txt", "r", encoding="utf-8") as f:
         knowledge = f.read()
@@ -259,5 +227,10 @@ def chat():
         })
 
     reply = ask_ai(user_msg, relevant)
-
     return jsonify({"reply": reply})
+
+# =========================
+# RUN
+# =========================
+if __name__ == "__main__":
+    app.run(debug=True)
