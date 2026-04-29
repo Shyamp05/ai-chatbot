@@ -200,11 +200,13 @@ def chat():
     # =========================
     # RULE-BASED
     # =========================
+    # fees FIRST
+    if "fee" in q or "price" in q or "cost" in q:
+        return jsonify({"reply": "The fee for each course is ₹10,000."})
+
+    # then course
     if "course" in q:
         return jsonify({"reply": "We offer Python, Java, and Data Science courses."})
-
-    if "fee" in q or "price" in q:
-        return jsonify({"reply": "The fee is ₹10,000."})
 
     if "time" in q:
         return jsonify({"reply": "Classes run from 9 AM to 6 PM."})
