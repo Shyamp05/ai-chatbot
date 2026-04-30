@@ -11,16 +11,11 @@
         }
 
         .chat-container {
-            width: 350px;
-            height: 520px;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            display: flex;
-            flex-direction: column;
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 350px;
+        height: 500px;
         }
 
         .chat-header {
@@ -180,6 +175,37 @@ button {
     border-radius: 10px 10px 0 10px;
 }
 
+/* =========================
+   MOBILE FIX
+========================= */
+@media (max-width: 768px) {
+
+    .chat-container {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 95%;
+        max-width: 420px;
+        height: 70vh;
+        border-radius: 16px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+    }
+
+    .chatbox {
+        height: calc(70vh - 130px);
+    }
+
+    .chat-header {
+        border-radius: 16px 16px 0 0;
+    }
+
+    #chatToggle {
+        bottom: 15px;
+        right: 15px;
+    }
+}
+
     </style>
 </head>
 
@@ -251,7 +277,10 @@ async function sendMessage() {
         const response = await fetch("/chat", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({message: message})
+            body: JSON.stringify({
+                message: message,
+                time: new Date().toLocaleString("en-IN")
+            })
         });
 
         const data = await response.json();
