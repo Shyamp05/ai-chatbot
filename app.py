@@ -92,13 +92,13 @@ Question:
 
         if "error" in data:
             print("GEMINI ERROR:", data["error"])
-            return "AI not working. Please try again."
+            return "Please check your spelling/question again."
 
         return data["candidates"][0]["content"]["parts"][0]["text"]
 
     except Exception as e:
         print("ERROR:", e)
-        return "Server busy. Try again."
+        return "Please check your spelling/question again."
 
 # =========================
 # ROUTES
