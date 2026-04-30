@@ -183,7 +183,7 @@ def chat():
                         state["name"],
                         phone,
                         "New Lead",
-                        datetime.now().strftime("%Y-%m-%d %H:%M"),
+                        request.json.get("time", datetime.now().strftime("%Y-%m-%d %H:%M")),
                         "Website Chatbot"
                     ])
                 except Exception as e:
