@@ -218,6 +218,16 @@ def chat():
     # =========================
     # AI FALLBACK
     # =========================
+
+    if "python" in q:
+        return jsonify({"reply": "Our Python course covers basics to advanced with projects."})
+
+    if "java" in q:
+        return jsonify({"reply": "Our Java course includes OOP, projects, and real-world applications."})
+    
+    if "data science" in q:
+        return jsonify({"reply": "Our Data science course includes studying of python libraries like panda,numpy,etc.."})
+
     with open("knowledge.txt", "r", encoding="utf-8") as f:
         knowledge = f.read()
 
@@ -228,8 +238,14 @@ def chat():
             "reply": "I can help with courses, fees, timings, and demo classes. What would you like to know?"
         })
 
-    reply = ask_ai(user_msg, relevant)
-    return jsonify({"reply": reply})
+    try:
+        reply=ask_ai(user_msg, relevant)
+        return jsonify({"reply": reply})
+    except Exception as e:
+        print("AI ERROR:", e)
+        return jsonify({
+            "reply": "I can help with courses, fees, timings, and demo classes. What would you like to know?"
+    })
 
 # =========================
 # RUN
